@@ -1,7 +1,7 @@
-// src/pages/DocumentsPage.jsx
 import React, { useState, useEffect } from 'react';
 import ResumeService from '../services/resume.service';
 import ResumeModal from '../components/ResumeModal';
+import ConfirmationModal from '../components/ConfirmationModal'; 
 
 const DocumentsPage = () => {
   const [resumes, setResumes] = useState([]);
@@ -9,7 +9,7 @@ const DocumentsPage = () => {
   const [selectedResume, setSelectedResume] = useState(null);
   const [newResumeTitle, setNewResumeTitle] = useState('');
   const [newResumeFile, setNewResumeFile] = useState(null);
-
+  const [deleteRequest, setDeleteRequest] = useState(null); 
   useEffect(() => {
     fetchResumes();
   }, []);
@@ -33,17 +33,24 @@ const DocumentsPage = () => {
     });
   };
 
-  const handleDeleteResume = (resumeId) => {
-    // Ask for confirmation before deleting
-    if (window.confirm('Are you sure you want to delete this resume?')) {
-      ResumeService.deleteResume(resumeId).then(() => {
-        // Refresh the list by filtering out the deleted resume
-        setResumes(prevResumes => prevResumes.filter(r => r._id !== resumeId));
-      }).catch(err => {
-        console.error("Failed to delete resume:", err);
-        alert("Could not delete the resume. Please try again.");
-      });
-    }
+  const handleDeleteResume = (resumeId, resumeTitle) => {
+    setDeleteRequest({
+      id: resumeId,
+      title: resumeTitle,
+      message: `Are you sure you want to delete "${resumeTitle}"? This action cannot be undone.`
+    });
+  };
+
+  const confirmDeleteResume = () => {
+    if (!deleteRequest) return;
+    
+    ResumeService.deleteResume(deleteRequest.id).then(() => {
+      setResumes(prevResumes => prevResumes.filter(r => r._id !== deleteRequest.id));
+      setDeleteRequest(null);
+    }).catch(err => {
+      console.error("Failed to delete resume:", err);
+      alert("Could not delete the resume. Please try again.");
+    });
   };
 
   const handleUpload = async (e) => {
@@ -60,14 +67,13 @@ const DocumentsPage = () => {
     try {
       await ResumeService.uploadResume(formData);
       alert('Resume uploaded successfully!');
-      fetchResumes(); // Refresh the list
+      fetchResumes();
       setNewResumeTitle('');
       setNewResumeFile(null);
     } catch (err) {
       alert('Failed to upload resume.');
     }
   };
-
 
   if (loading) {
     return <div className="text-center"><p>Loading documents...</p></div>;
@@ -106,7 +112,7 @@ const DocumentsPage = () => {
                     <button onClick={() => handleViewResume(resume._id)} className="text-sm text-blue-600 hover:underline font-semibold">
                       View
                     </button>
-                    <button onClick={() => handleDeleteResume(resume._id)} className="text-sm text-red-600 hover:underline font-semibold">
+                    <button onClick={() => handleDeleteResume(resume._id, resume.title)} className="text-sm text-red-600 hover:underline font-semibold">
                       Delete
                     </button>
                   </div>
@@ -120,6 +126,14 @@ const DocumentsPage = () => {
       </div>
       
       <ResumeModal resume={selectedResume} onClose={() => setSelectedResume(null)} />
+      
+      <ConfirmationModal 
+        isOpen={!!deleteRequest}
+        onClose={() => setDeleteRequest(null)}
+        onConfirm={confirmDeleteResume}
+        title="Delete Resume"
+        message={deleteRequest?.message}
+      />
     </>
   );
 };

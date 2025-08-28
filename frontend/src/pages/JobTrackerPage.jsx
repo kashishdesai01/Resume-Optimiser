@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import ApplicationService from '../services/application.service';
 import ResumeService from '../services/resume.service';
 import { DndContext, closestCorners } from '@dnd-kit/core';
 import { Column } from '../components/Column';
 import { ApplicationCard } from '../components/ApplicationCard';
 import Modal from '../components/Modal';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const ALL_STATUSES = ['Applied', 'Screening', 'Interviewing', 'Offer', 'Accepted', 'Rejected', 'Withdrawn', 'Ghosted'];
 const JOB_TYPES = ['Full Time', 'Part Time', 'Contract', 'Internship'];
@@ -21,6 +23,7 @@ const JobTrackerPage = () => {
     );
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const columnsMenuRef = useRef(null);
+    const [deleteRequest, setDeleteRequest] = useState(null); 
     
     // Form states
     const [jobTitle, setJobTitle] = useState('');
@@ -118,16 +121,23 @@ const JobTrackerPage = () => {
         }
     };
 
-    const handleDeleteSelected = () => {
-        if (window.confirm(`Are you sure you want to delete ${selectedApplications.length} application(s)?`)) {
-            ApplicationService.deleteManyApplications(selectedApplications).then(() => {
-                setApplications(prev => prev.filter(app => !selectedApplications.includes(app._id)));
-                setSelectedApplications([]);
-                setIsManaging(false);
-            }).catch(err => alert("Failed to delete applications."));
-        }
-    };
+    // const handleDeleteSelected = () => {
+    //     if (window.confirm(`Are you sure you want to delete ${selectedApplications.length} application(s)?`)) {
+    //         ApplicationService.deleteManyApplications(selectedApplications).then(() => {
+    //             setApplications(prev => prev.filter(app => !selectedApplications.includes(app._id)));
+    //             setSelectedApplications([]);
+    //             setIsManaging(false);
+    //         }).catch(err => alert("Failed to delete applications."));
+    //     }
+    // };
     
+    const handleDeleteSelected = () => {
+        if (selectedApplications.length === 0) return;
+        setDeleteRequest({
+            ids: selectedApplications,
+            message: `Are you sure you want to delete ${selectedApplications.length} selected application(s)? This action cannot be undone.`
+        });
+    };
     const handleToggleManageMode = () => {
         if (isManaging) {
             setSelectedApplications([]);
@@ -230,6 +240,40 @@ const JobTrackerPage = () => {
         
         return filtered;
     }, [applications, searchQuery, appliedFromDate, appliedUntilDate, selectedJobType, selectedStatus, showLikedOnly, sortBy, sortOrder]);
+
+    // const handleDeleteSelected = () => {
+    //     setItemToDelete({
+    //         ids: selectedApplications,
+    //         message: `Are you sure you want to delete ${selectedApplications.length} application(s)?`
+    //     });
+    // };
+
+    // const confirmDelete = () => {
+    //     const toastId = toast.loading('Deleting...');
+    //     ApplicationService.deleteManyApplications(itemToDelete.ids)
+    //         .then(() => {
+    //             setApplications(prev => prev.filter(app => !itemToDelete.ids.includes(app._id)));
+    //             setSelectedApplications([]);
+    //             setIsManaging(false);
+    //             toast.success('Application(s) deleted.', { id: toastId });
+    //         })
+    //         .catch(err => toast.error("Failed to delete applications.", { id: toastId }))
+    //         .finally(() => setItemToDelete(null));
+    // };
+
+    const confirmDelete = () => {
+        if (!deleteRequest) return;
+        const toastId = toast.loading('Deleting...');
+        ApplicationService.deleteManyApplications(deleteRequest.ids)
+            .then(() => {
+                setApplications(prev => prev.filter(app => !deleteRequest.ids.includes(app._id)));
+                setSelectedApplications([]);
+                setIsManaging(false);
+                toast.success('Application(s) deleted.', { id: toastId });
+            })
+            .catch(err => toast.error("Failed to delete applications.", { id: toastId }))
+            .finally(() => setDeleteRequest(null)); // Close the modal
+    };
 
     if (loading) return <p className="text-center">Loading applications...</p>;
 
@@ -441,6 +485,14 @@ const JobTrackerPage = () => {
                     <div className="flex justify-end pt-4"><button type="button" onClick={() => setIsModalOpen(false)} className="mr-2 px-4 py-2 bg-gray-200 rounded-md">Cancel</button><button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700">Add</button></div>
                 </form>
             </Modal>
+
+            <ConfirmationModal 
+    isOpen={!!deleteRequest}  // ✅ Use deleteRequest instead of itemToDelete
+    onClose={() => setDeleteRequest(null)}  // ✅ Use setDeleteRequest
+    onConfirm={confirmDelete}
+    title="Confirm Deletion"
+    message={deleteRequest?.message}  // ✅ Use deleteRequest
+/>
         </>
     );
 };

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthService from '../services/auth.service';
+import toast from 'react-hot-toast';
+
 
 const InputField = ({ id, type, value, onChange, placeholder, isValid }) => {
     const [isFocused, setIsFocused] = useState(false);
@@ -26,7 +28,6 @@ const InputField = ({ id, type, value, onChange, placeholder, isValid }) => {
     );
 };
 
-// --- Reusable Password Requirements Component ---
 const PasswordRequirements = ({ checks }) => (
     <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-1">
         {Object.entries(checks).map(([key, { label, isValid }]) => (

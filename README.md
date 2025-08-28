@@ -4,7 +4,7 @@ An intelligent, full-stack web application designed to empower job seekers by pr
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 * **Resume Analysis:** Instantly compares any resume against a job description to generate a match score, identify keyword gaps, and provide a strategic summary.
 * **Actionable Optimization Suggestions:** Acts as an AI career coach by generating specific, actionable suggestions to rewrite resume bullet points for maximum impact.
@@ -20,8 +20,8 @@ An intelligent, full-stack web application designed to empower job seekers by pr
 This project is built with a modern, decoupled microservice architecture.
 
 * **Frontend:** React.js, Tailwind CSS, Chart.js, @dnd-kit
-* **Backend (API & User Management):** Node.js, Express.js, MongoDB
-* **AI Service (Microservice):** Python, FastAPI
+* **Backend:** Node.js, Express.js, MongoDB
+* **AI Service:** Python, FastAPI
 * **AI & Machine Learning:** OpenAI API (GPT-4o)
 * **Database:** MongoDB
 * **Cloud & DevOps:** Amazon S3 (for file storage)

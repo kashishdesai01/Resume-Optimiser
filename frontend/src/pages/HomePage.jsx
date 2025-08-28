@@ -5,6 +5,8 @@ import AnalyzeService from '../services/analyze.service';
 import AuthService from '../services/auth.service';
 import ResumeService from '../services/resume.service';
 import GenerateService from '../services/generate.service';
+import SaveResumeModal from '../components/SaveResumeModal';
+import toast from 'react-hot-toast';
 
 const HomePage = () => {
     const [resumeText, setResumeText] = useState('');
@@ -18,7 +20,7 @@ const HomePage = () => {
     const [optimizationSuggestions, setOptimizationSuggestions] = useState(null);
     const [isOptimizeModalOpen, setIsOptimizeModalOpen] = useState(false);
     const [resumeFile, setResumeFile] = useState(null);
-
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
 
@@ -64,38 +66,87 @@ const HomePage = () => {
         setIsLoading(false);
     };
 
-    const handleSaveResume = async () => {
-        if (!currentUser) {
-            if (window.confirm("Please log in or sign up to save your resumes.")) {
-                navigate('/login');
-            }
-            return;
-        }
+    // const handleSaveResume = async () => {
+    //     if (!currentUser) {
+    //         if (window.confirm("Please log in or sign up to save your resumes.")) {
+    //             navigate('/login');
+    //         }
+    //         return;
+    //     }
 
-        const title = prompt(
-            "Enter a title for this resume:",
-            resumeFile ? resumeFile.name.replace(/\.[^/.]+$/, "") : "Pasted Resume"
-        );
-        if (!title) return;
+    //     const title = prompt(
+    //         "Enter a title for this resume:",
+    //         resumeFile ? resumeFile.name.replace(/\.[^/.]+$/, "") : "Pasted Resume"
+    //     );
+    //     if (!title) return;
 
+    //     try {
+    //         if (resumeFile) {
+    //             const formData = new FormData();
+    //             formData.append('title', title);
+    //             formData.append('file', resumeFile);
+    //             await ResumeService.uploadAndSaveResumeFile(formData);
+    //         } else {
+    //             if (!resumeText) {
+    //                 alert("Please paste or upload a resume before saving.");
+    //                 return;
+    //             }
+    //             await ResumeService.saveResumeText(title, resumeText);
+    //         }
+    //         alert("Resume saved successfully!");
+    //         setResumeFile(null);
+    //         ResumeService.getResumes().then(res => setSavedResumes(res.data));
+    //     } catch (err) {
+    //         alert("Failed to save resume.");
+    //     }
+    // };
+
+    const handleSaveResume = async (title) => {
+        // 1. Close the modal and show a "loading" toast
+        setIsSaveModalOpen(false);
+        const toastId = toast.loading('Saving resume...');
+    
         try {
             if (resumeFile) {
+                // Logic to save an uploaded file
                 const formData = new FormData();
                 formData.append('title', title);
                 formData.append('file', resumeFile);
                 await ResumeService.uploadAndSaveResumeFile(formData);
             } else {
-                if (!resumeText) {
-                    alert("Please paste or upload a resume before saving.");
-                    return;
-                }
+                // Logic to save pasted text
                 await ResumeService.saveResumeText(title, resumeText);
             }
-            alert("Resume saved successfully!");
+            
+            // 2. Show a success toast
+            toast.success('Resume saved successfully!', { id: toastId });
+            
+            // 3. Clean up and refresh the list
             setResumeFile(null);
             ResumeService.getResumes().then(res => setSavedResumes(res.data));
         } catch (err) {
-            alert("Failed to save resume.");
+            // 4. Show an error toast
+            toast.error('Failed to save resume.', { id: toastId });
+        }
+    };
+
+    const triggerSaveFlow = () => {
+        if (!resumeText) {
+            toast.error("Please paste or upload a resume before saving.");
+            return;
+        }
+        if (currentUser) {
+            setIsSaveModalOpen(true);
+        } else {
+            toast((t) => (
+                <span className="flex flex-col items-center gap-2">
+                    Please log in to save your resume.
+                    <div className="flex gap-2">
+                        <button className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm" onClick={() => { navigate('/login'); toast.dismiss(t.id); }}>Login</button>
+                        <button className="px-3 py-1 bg-gray-200 rounded-md text-sm" onClick={() => toast.dismiss(t.id)}>Dismiss</button>
+                    </div>
+                </span>
+            ));
         }
     };
 
@@ -209,6 +260,7 @@ const HomePage = () => {
     };
 
     return (
+        <>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
             <div className="w-full max-w-7xl mx-auto px-6 py-12">
                 <header className="text-center mb-16">
@@ -232,7 +284,7 @@ const HomePage = () => {
                                     {savedResumes.map(resume => (<option key={resume._id} value={resume._id}>{resume.title}</option>))}
                                 </select>
                             </div>
-                            <button onClick={handleSaveResume} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-emerald-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200">
+                            <button onClick={triggerSaveFlow} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-emerald-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200">
                                 💾 Save Current Resume
                             </button>
                         </div>
@@ -384,7 +436,15 @@ const HomePage = () => {
                     </div>
                 )}
             </div>
-        </div>
+            </div>
+            <SaveResumeModal
+                isOpen={isSaveModalOpen}
+                onClose={() => setIsSaveModalOpen(false)}
+                onSave={handleSaveResume}
+                initialTitle={resumeFile ? resumeFile.name.replace(/\.[^/.]+$/, "") : "Pasted Resume"}
+            />
+        
+    </>
     );
 };
 

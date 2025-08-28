@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import ApplicationService from '../services/application.service';
 import ResumeService from '../services/resume.service';
 import Modal from '../components/Modal';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const StatusIcon = () => (
     <span className="absolute flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full -left-3 ring-8 ring-white">
@@ -17,6 +18,8 @@ const ApplicationDetailPage = () => {
     const [resumes, setResumes] = useState([]);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [formData, setFormData] = useState({});
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // State for delete modal
+
 
     const statuses = ['Applied', 'Screening', 'Interviewing', 'Offer', 'Withdrawn', 'Ghosted', 'Rejected', 'Accepted'];
 
@@ -45,16 +48,20 @@ const ApplicationDetailPage = () => {
             setIsEditModalOpen(false);
         });
     };
-    
-    const handleDelete = () => {
-        if (window.confirm('Are you sure you want to delete this application?')) {
-            ApplicationService.deleteApplication(applicationId)
-                .then(() => {
-                    alert('Application deleted.');
-                    navigate('/dashboard/tracker');
-                });
-        }
+
+    const confirmDelete = () => {
+        setIsDeleteModalOpen(false);
+        const toastId = toast.loading('Deleting application...');
+        ApplicationService.deleteApplication(applicationId)
+            .then(() => {
+                toast.success('Application deleted.', { id: toastId });
+                navigate('/dashboard/tracker');
+            })
+            .catch(err => {
+                toast.error('Could not delete the application.', { id: toastId });
+            });
     };
+
 
     if (!application) return <div className="text-center">Loading...</div>;
 
@@ -69,13 +76,11 @@ const ApplicationDetailPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setIsEditModalOpen(true)} className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700">Edit</button>
-                        <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700">Delete</button>
+                        <button onClick={setIsDeleteModalOpen} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700">Delete</button>
                     </div>
                 </div>
 
-                {/* --- TWO-COLUMN DISPLAY LAYOUT --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* --- LEFT COLUMN (MAIN CONTENT) --- */}
                     <div className="lg:col-span-2 bg-white p-8 rounded-lg shadow-lg space-y-8">
                          <div>
                             <h2 className="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Job Description</h2>
@@ -87,7 +92,6 @@ const ApplicationDetailPage = () => {
                         </div>
                     </div>
 
-                    {/* --- RIGHT COLUMN (SIDEBAR) --- */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-white p-6 rounded-lg shadow-lg">
                             <h2 className="text-xl font-semibold text-gray-700 mb-4">Details</h2>
@@ -114,7 +118,6 @@ const ApplicationDetailPage = () => {
                 </div>
             </div>
 
-            {/* --- PROFESSIONALLY DESIGNED EDIT MODAL --- */}
             <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Application">
                 <form onSubmit={handleSave} className="space-y-6">
                     {/* Section 1: Job Details */}
@@ -168,6 +171,13 @@ const ApplicationDetailPage = () => {
                     </div>
                 </form>
             </Modal>
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Confirm Deletion"
+                message="Are you sure you want to delete this application? This action cannot be undone."
+            />
         </>
     );
 };

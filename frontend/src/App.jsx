@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
@@ -35,6 +36,7 @@ function App() {
   return (
     <Router>
       <div className="flex flex-col min-h-screen bg-gray-100">
+      <Toaster position="top-center" reverseOrder={false}/>
         <Navbar currentUser={currentUser} onLogout={handleLogout} />
         <main className="flex-grow w-full p-4 md:p-8">
           <Routes>
